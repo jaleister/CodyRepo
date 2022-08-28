@@ -12,13 +12,8 @@ namespace prj4
 {
     class Program
     {
-        public class myClass11
-        {
-            static public int a=4068;
-               
-        }
 
-        public class GeneralStringStruct {public string a;public string b;public string c; public string d;public string e; public string f; 
+        public class GeneralStringStruct {public string a;public string b;public string c; public string d;public string e;
                                           public string EntityId;public string AssocEntityId; public string AssocEntityType; }
 
 
@@ -150,8 +145,7 @@ namespace prj4
            // For Address
            //
            ///////////////////////////
-           List<GeneralStringStruct> joinedList = new List<GeneralStringStruct>();
-
+           
            foreach (var item in AddrList)
            {
                GeneralStringStruct oneRec = new GeneralStringStruct();
@@ -166,11 +160,10 @@ namespace prj4
                  oneRec.AssocEntityId = aitem.EntityId;
                  oneRec.AssocEntityType = aitem.EntityType;
 
-                 joinedList.Add(oneRec);
+                 myAddrAssnList.Add(oneRec);
 
               }
            }
-           myAddrAssnList = joinedList;
 
            //Console.WriteLine("Address Associations:");
            //foreach (var item in myAddrAssnList)
@@ -185,7 +178,6 @@ namespace prj4
            // For Vehicle
            //
            ///////////////////////////
-           joinedList.Clear();  // clear out the previous temporary results
 
            foreach (var item in VehicleList)
            {
@@ -204,47 +196,10 @@ namespace prj4
                  oneRec.AssocEntityId = aitem.EntityId;
                  oneRec.AssocEntityType = aitem.EntityType;
 
-                 joinedList.Add(oneRec);
+                 myVehAssnList.Add(oneRec);
 
               }
            }
-           myVehAssnList = joinedList;
-
-           //Console.WriteLine("Vehicle Associations:");
-           //foreach (var item in myVehAssnList)
-           //{
-           //  Console.WriteLine("Make = {0} , Model = {1} , Entity Id = {2} , AssocEntityId = {3}, AssocEntityIdType = {4}", item.a,item.b,   item.EntityId, item.AssocEntityId,  item.AssocEntityType.ToUpper()  );
-           //}
-
-
-           ////////////////////////////
-           // now, essentially join the "child list" to the associated "parent" elements
-           // not sure how to do currently with linq, so doing it this way instead
-           //
-           // For Person
-           //
-           ///////////////////////////
-           joinedList.Clear();
-
-           foreach (var item in PersonList)
-           {
-               GeneralStringStruct oneRec = new GeneralStringStruct();
-
-              // only grab the records that contain associations
-              foreach (var aitem in item.Associations)  
-              {
-                 // Add association data to new list, essentially joining then
-                 oneRec.a = item.LastName;
-                 oneRec.b = item.FirstName;
-                 oneRec.EntityId = item.EntityId;
-                 oneRec.AssocEntityId = aitem.EntityId;
-                 oneRec.AssocEntityType = aitem.EntityType;
-
-                 joinedList.Add(oneRec);
-
-              }
-           }
-           myPersAssnList = joinedList;
 
            ////////////////////////////
            // now, essentially join the "child list" to the associated "parent" elements
@@ -253,7 +208,6 @@ namespace prj4
            // For Organization
            //
            ///////////////////////////
-           joinedList.Clear();
 
            foreach (var item in OrgList)
            {
@@ -269,27 +223,54 @@ namespace prj4
                  oneRec.AssocEntityId = aitem.EntityId;
                  oneRec.AssocEntityType = aitem.EntityType;
 
-                 joinedList.Add(oneRec);
+                 myOrgAssnList.Add(oneRec);
 
               }
            }
 
-           myOrgAssnList = joinedList;
 
-
-           // display the vehicle(s) for 4976 Penelope Via
-           var vehToAddrList = myAddrAssnList
+           // display  each vehicle's address links
+           var vehAddressesList = myVehAssnList
                     .Where(v => v.AssocEntityId == address4976EntityId)
                     .Where(v => v.AssocEntityType.ToUpper() == "ADDRESS")
                        .Select(v => v);
 
-           if (vehToAddrList.Count() == 0)
-              Console.WriteLine("4976 Penelope Via ---> EntityId = {0} NOT FOUND IN VEHICLE FILE! ", address4976EntityId );
 
-           // display the vehicle(s) for 4976 Penelope Via
-           //var addrToVehList = myVehAssnList
-           //         .Where(v => v.EntityId == address4976EntityId)
-           //         .Select(v => v);
+           // display  each address' vehicle links
+           var addrVehiclesList = myAddrAssnList
+                    .Where(v => v.EntityId == address4976EntityId)
+                    .Where(v => v.AssocEntityType.ToUpper() == "VEHICLE")
+                    .Select(v => v);
+
+           if (addrVehiclesList.Count() > 0)
+           {
+              foreach (var item in addrVehiclesList)  // get each vehicle's data
+              {
+                 // display  each address' vehicle links
+                 var vehDataList = VehicleList
+                    .Where(v => v.EntityId == item.AssocEntityId)
+                    .Select(v => v);   // should only be 1
+
+                 if (vehDataList.Count() > 0)   // should only be 1
+                 {
+                   foreach (var vitem in vehDataList)  // get each vehicle's data
+                   {                     
+                     Console.WriteLine("Make = {0} , Model = {1} , Plate Number = {2} , State = {3} , Year = {4} ", vitem.Make, vitem.Model, vitem.PlateNumber, vitem.State, vitem.Year);
+                     Console.WriteLine("      EntityId = {0} ", vitem.EntityId);
+                   }
+ 
+                 }
+              }      
+           }
+           else if (vehAddressesList.Count() > 0)
+           {
+                // should only be one vehicle in this case
+                 // a=make, b=model
+               Console.WriteLine("Make = {0} , Model = {1} ", vehAddressesList.First().a, vehAddressesList.First().b);
+
+           }
+           else
+               Console.WriteLine("4976 Penelope Via ---> NO VEHICLES FOUND");
 
 
 
