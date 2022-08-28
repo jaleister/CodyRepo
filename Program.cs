@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,23 +7,23 @@ using System.Text.Json.Serialization;
 using System.IO;
 using SimpleDataManagement.Model;
 
+
 namespace prj4
 {
-
     class Program
     {
-
- 
         public class myClass11
         {
             static public int a=4068;
                
         }
 
+        public class GeneralStringStruct {public string a;public string b;public string c; public string d;public string e; public string f; 
+                                          public string EntityId;public string AssocEntityId; public string AssocEntityType; }
+
 
         static void Main(string[] args)
         {
-
 
              // LOAD THE DATA FILES INTO LISTS VIA DESERIALIZATION
 
@@ -51,7 +51,6 @@ namespace prj4
                  VehicleList = JsonSerializer.Deserialize<List<Vehicle>>(json);
              }
             
-
              List<Organization> OrgList = new List<Organization>();
  
              using (StreamReader r = new StreamReader(".\\DataSources\\Organizations_20220824_00.json"))
@@ -67,69 +66,302 @@ namespace prj4
            int orgCount = OrgList.Count();
            int vehicleCount = VehicleList.Count();
            
+           Console.WriteLine("\nQuestion #1");
+
            if ((addrCount == 0) || (personCount == 0) || (orgCount == 0) || (vehicleCount == 0))
                Console.WriteLine("Do all files have entities?  FALSE");
            else 
                Console.WriteLine("Do all files have entities?  TRUE");
 
            // 2. What is the total count for all entities?
+           Console.WriteLine("\nQuestion #2");
            int totalRecsCount = addrCount + personCount + orgCount + vehicleCount;
+
 
            Console.WriteLine("Total count for all entities =  {0} " , totalRecsCount);
 
-           // 3. What is the count for each type of Entity?  
-           Console.WriteLine("Total Address Count ={0} ",addrCount);
+           // 3. What is the count for each type of Entity? 
+           Console.WriteLine("\nQuestion #3");
+ 
            Console.WriteLine("Total Person Count ={0} ",personCount);
            Console.WriteLine("Total Organization Count ={0} ",orgCount);
            Console.WriteLine("Total Vehicle Count ={0} ",vehicleCount);
+           Console.WriteLine("Total Address Count ={0} ",addrCount);
                 
            //  4. Provide a breakdown of entities which have associations  
            //  a. Per Entity count
            //  b. Total count  
+           Console.WriteLine("\nQuestion #4");
+ 
+           // get the list items that have at least 1 association
+           var myPersonAssociationList = PersonList
+                    .Where(v => v.Associations.Count > 0)
+                    .Select(v => v).ToList();
 
-         //  var xx =
-         //      OrgList.GroupBy(s => new { s.Score, s.StreamId}).Select(g => new { EntityID = g.Key, TotalCount = g.Count() });
+           var myOrgAssociationList = OrgList
+                    .Where(v => v.Associations.Count > 0)
+                    .Select(v => v).ToList();
 
+           var myVehAssociationList = VehicleList
+                    .Where(v => v.Associations.Count > 0)
+                    .Select(v => v).ToList();
+
+           var myAddrAssociationList = AddrList
+                    .Where(v => v.Associations.Count > 0)
+                    .Select(v => v).ToList();
+
+
+           // Per entity association counts
+           Console.WriteLine("Per Entity Count: ");
+           Console.WriteLine("Person: {0}",myPersonAssociationList.Count);
+           Console.WriteLine("Organization: {0}",myOrgAssociationList.Count);
+           Console.WriteLine("Vehicle: {0}",myVehAssociationList.Count);
+           Console.WriteLine("Address: {0}",myAddrAssociationList.Count);
+           Console.WriteLine("Total Count: {0} \n", (myPersonAssociationList.Count + myOrgAssociationList.Count + myVehAssociationList.Count + myAddrAssociationList.Count ));
+           
            // 5. Provide the vehicle detail that is associated to the address
            //  "4976 Penelope
            //   Via South Franztown, NH 71024"?  
+           Console.WriteLine("Question #5");
  
+           List<GeneralStringStruct>  myPersAssnList = new List<GeneralStringStruct>();
+           List<GeneralStringStruct>  myOrgAssnList = new List<GeneralStringStruct>();
+           List<GeneralStringStruct>  myVehAssnList = new List<GeneralStringStruct>();
+           List<GeneralStringStruct>  myAddrAssnList = new List<GeneralStringStruct>();
+
            // retrieve the address entityId
-           var address4976EntityID = AddrList
-                    .Where(v => v.StreetAddress == "4976 Penelope Via")
-                    .Where(v => v.City == "South Franztown")
-                    .Where(v => v.State == "NH")
-                    .Where(v => v.ZipCode == "71024")
-                    .Select(v => v.EntityId).ToArray();
+          var address4976EntityIDlist =   (from p in AddrList
+                                        where p.StreetAddress.ToUpper() == "4976 PENELOPE VIA"
+                                        where p.City.ToUpper() == "SOUTH FRANZTOWN"
+                                        where p.State.ToUpper() == "NH"
+                                        where p.ZipCode == "71024"                        
+                                       select p).ToList();
 
-           // Add exception handler for no address found           
-           Console.WriteLine("4976 Penelope Via South Franztown, NH 71024 entityID= {0}", address4976EntityID);
-           
+           string address4976EntityId = "4976 Penelope Via -- EntityID not FOUND";  // default
+           if (address4976EntityIDlist.Count() > 0)  // populate if exists
+               address4976EntityId = address4976EntityIDlist[0].EntityId;
 
-           // now get associated vehicles for that address entityId.  need to drill into asociations
-     /*      var vehToAddrList = VehicleList
-                    .Where(v => v.Associations.SelectMany().Where(x =>  ) = address4976EntityID)
-                    .Where(v => v.Associations.Select(x => x.EntityId = address4976EntityID.ToString())
+           Console.WriteLine("4976 Penelope Via ---> EntityID = {0}", address4976EntityId);      
+ 
+           ////////////////////////////
+           // now, essentially join the "child list" to the associated "parent" elements
+           // couldn't find a way to do with linq, so doing it this way instead
+           //
+           // For Address
+           //
+           ///////////////////////////
+           List<GeneralStringStruct> joinedList = new List<GeneralStringStruct>();
 
-                    .Where(v => v.Associations.Count > 0)
-                    .Select(v => v);
-*/
-     // print out the vehicle details for each vehicle in the  vehToAddrList
-     //      foreach (var item in vehToAddrList)
-     //          Console.WriteLine(item.Make + ", " + item.Model);
+           foreach (var item in AddrList)
+           {
+               GeneralStringStruct oneRec = new GeneralStringStruct();
+
+              // only grab the records that contain associations 
+              foreach (var aitem in item.Associations)  
+              {
+                 // Add association data to new list, essentially joining then
+                 oneRec.a = item.StreetAddress;
+                 oneRec.b = item.City;
+                 oneRec.EntityId = item.EntityId;
+                 oneRec.AssocEntityId = aitem.EntityId;
+                 oneRec.AssocEntityType = aitem.EntityType;
+
+                 joinedList.Add(oneRec);
+
+              }
+           }
+           myAddrAssnList = joinedList;
+
+           //Console.WriteLine("Address Associations:");
+           //foreach (var item in myAddrAssnList)
+           //{
+           //  Console.WriteLine("Entity Id = {0} AssocEntityId = {1}, AssocEntityIdType = {2}" ,item.EntityId, item.AssocEntityId,  item.AssocEntityType.ToUpper()  );
+           //}
+
+           ////////////////////////////
+           // now, essentially join the "child list" to the associated "parent" elements
+           // not sure how to do currently with linq, so doing it this way instead
+           //
+           // For Vehicle
+           //
+           ///////////////////////////
+           joinedList.Clear();  // clear out the previous temporary results
+
+           foreach (var item in VehicleList)
+           {
+               GeneralStringStruct oneRec = new GeneralStringStruct();
+
+              // only grab the records that contain associations
+              foreach (var aitem in item.Associations)  
+              {
+                 // Add association data to new list, essentially joining then
+                 oneRec.a = item.Make;
+                 oneRec.b = item.Model;
+                 oneRec.c = item.Year.ToString();
+                 oneRec.d = item.PlateNumber;
+                 oneRec.e = item.State;
+                 oneRec.EntityId = item.EntityId;
+                 oneRec.AssocEntityId = aitem.EntityId;
+                 oneRec.AssocEntityType = aitem.EntityType;
+
+                 joinedList.Add(oneRec);
+
+              }
+           }
+           myVehAssnList = joinedList;
+
+           //Console.WriteLine("Vehicle Associations:");
+           //foreach (var item in myVehAssnList)
+           //{
+           //  Console.WriteLine("Make = {0} , Model = {1} , Entity Id = {2} , AssocEntityId = {3}, AssocEntityIdType = {4}", item.a,item.b,   item.EntityId, item.AssocEntityId,  item.AssocEntityType.ToUpper()  );
+           //}
+
+
+           ////////////////////////////
+           // now, essentially join the "child list" to the associated "parent" elements
+           // not sure how to do currently with linq, so doing it this way instead
+           //
+           // For Person
+           //
+           ///////////////////////////
+           joinedList.Clear();
+
+           foreach (var item in PersonList)
+           {
+               GeneralStringStruct oneRec = new GeneralStringStruct();
+
+              // only grab the records that contain associations
+              foreach (var aitem in item.Associations)  
+              {
+                 // Add association data to new list, essentially joining then
+                 oneRec.a = item.LastName;
+                 oneRec.b = item.FirstName;
+                 oneRec.EntityId = item.EntityId;
+                 oneRec.AssocEntityId = aitem.EntityId;
+                 oneRec.AssocEntityType = aitem.EntityType;
+
+                 joinedList.Add(oneRec);
+
+              }
+           }
+           myPersAssnList = joinedList;
+
+           ////////////////////////////
+           // now, essentially join the "child list" to the associated "parent" elements
+           // not sure how to do currently with linq, so doing it this way instead
+           //
+           // For Organization
+           //
+           ///////////////////////////
+           joinedList.Clear();
+
+           foreach (var item in OrgList)
+           {
+               GeneralStringStruct oneRec = new GeneralStringStruct();
+
+              // only grab the records that contain associations
+              foreach (var aitem in item.Associations)  
+              {
+                 // Add association data to new list, essentially joining then
+                 oneRec.a = item.Name;
+                 oneRec.b = item.Type;
+                 oneRec.EntityId = item.EntityId;
+                 oneRec.AssocEntityId = aitem.EntityId;
+                 oneRec.AssocEntityType = aitem.EntityType;
+
+                 joinedList.Add(oneRec);
+
+              }
+           }
+
+           myOrgAssnList = joinedList;
+
+
+           // display the vehicle(s) for 4976 Penelope Via
+           var vehToAddrList = myAddrAssnList
+                    .Where(v => v.AssocEntityId == address4976EntityId)
+                    .Where(v => v.AssocEntityType.ToUpper() == "ADDRESS")
+                       .Select(v => v);
+
+           if (vehToAddrList.Count() == 0)
+              Console.WriteLine("4976 Penelope Via ---> EntityId = {0} NOT FOUND IN VEHICLE FILE! ", address4976EntityId );
+
+           // display the vehicle(s) for 4976 Penelope Via
+           //var addrToVehList = myVehAssnList
+           //         .Where(v => v.EntityId == address4976EntityId)
+           //         .Select(v => v);
 
 
 
            // 6. What person(s) are associated to the organization "Thiel and Sons"?
 
-           // 7. How many people have the same first and middle name?
+           Console.WriteLine("\nQuestion #6");
+           // retrieve the Organization entityId
+           var thielEntityID = OrgList
+                    .Where(v => v.Name == "Thiel and Sons")
+                    .Select(v => v.EntityId).ToArray();
 
+           if (thielEntityID.Count() > 0)  // couldn't find Thiel and Son
+               Console.WriteLine("No associations exist for Thiel and Sons");
+           else  // We found "Thiel and Sons". See if the association exists within the Person table
+           {
+               // find Thiel and Son associated entries in the Person Association list
+               var persToOrgList = myPersAssnList
+                    .Where(v => v.AssocEntityId == thielEntityID[0].ToString())
+                    .Where(v => v.AssocEntityType.ToUpper() == "ADDRESS")
+                    .Select(v => v);
+               if (persToOrgList.Count() > 0)  // found an association
+               {   
+                    Console.WriteLine("The following persons are related to Thiel and Sons:");
+
+                    foreach (var item in persToOrgList)              
+                    {
+                        Console.WriteLine("Name = {0} ", item.a);
+                    }
+               }
+               else
+                    Console.WriteLine("No associations exist for Thiel and Sons");        
+       
+           }  
+
+
+           // 7. How many people have the same first and middle name?
+           Console.WriteLine("\nQuestion #7");
+
+           int sameFirstMiddleCount =   (from p in PersonList
+                                            where p.FirstName.ToUpper() == p.MiddleName.ToUpper()
+                                            select p).Count();
+           Console.WriteLine("Same First and Middle Name count = {0}", sameFirstMiddleCount);        
+                                           
+
+ 
            // 8. Provide a breakdown of entities where the id contains "B3" in the following manor:
            //       a. Total count by type of Entity
            //       b. Total count of all entities
+           Console.WriteLine("\nQuestion #8");
+ 
 
+           int personSubStrCount =   (from p in PersonList
+                                      where p.EntityId.ToUpper().Contains("B3")
+                                       select p).Count();
+           Console.WriteLine("Person 'B3' count = {0}", personSubStrCount);    
 
-
+                     
+           int VehSubStrCount =   (from p in VehicleList
+                                      where p.EntityId.ToUpper().Contains("B3")
+                                       select p).Count();
+           Console.WriteLine("Vehicle 'B3' count = {0}", VehSubStrCount);        
+              
+          
+           int OrgSubStrCount =   (from p in OrgList
+                                      where p.EntityId.ToUpper().Contains("B3")
+                                       select p).Count();
+           Console.WriteLine("Organization 'B3' count = {0}", OrgSubStrCount);        
+          
+           int AddrSubStrCount =   (from p in AddrList
+                                      where p.EntityId.ToUpper().Contains("B3")
+                                       select p).Count();
+           Console.WriteLine("Address 'B3' count = {0}\n", AddrSubStrCount);        
 
 
 
